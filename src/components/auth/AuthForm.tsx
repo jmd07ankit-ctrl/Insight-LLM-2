@@ -13,6 +13,7 @@ const AuthForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -25,18 +26,18 @@ const AuthForm = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       console.log('Attempting sign in for:', email);
-      
+
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         console.error('Sign in error:', error);
         if (error.message.includes('Invalid login credentials')) {
@@ -47,16 +48,16 @@ const AuthForm = () => {
           throw error;
         }
       }
-      
+
       console.log('Sign in successful:', data.user?.email);
-      
+
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
 
       // The AuthContext will handle the redirect automatically
-      
+
     } catch (error: any) {
       console.error('Auth form error:', error);
       toast({
@@ -69,12 +70,57 @@ const AuthForm = () => {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      console.log('Attempting sign up for:', email);
+
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Sign up error:', error);
+        throw error;
+      }
+
+      console.log('Sign up successful:', data.user?.email);
+
+      toast({
+        title: "Account created!",
+        description: "You have successfully signed up. You can now sign in.",
+      });
+
+      // Reset form and switch to sign in
+      setEmail('');
+      setPassword('');
+      setIsSignUp(false);
+
+    } catch (error: any) {
+      console.error('Auth form error:', error);
+      toast({
+        title: "Sign Up Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = isSignUp ? handleSignUp : handleSignIn;
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>{isSignUp ? 'Create Account' : 'Sign In'}</CardTitle>
         <CardDescription>
-          Enter your credentials to access your notebooks
+          {isSignUp
+            ? 'Create an account to get started'
+            : 'Enter your credentials to access your notebooks'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -103,9 +149,32 @@ const AuthForm = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? (isSignUp ? 'Creating Account...' : 'Signing In...') : (isSignUp ? 'Sign Up' : 'Sign In')}
           </Button>
         </form>
+        <div className="mt-4 text-center text-sm">
+          {isSignUp ? (
+            <>
+              Already have an account?{' '}
+              <button
+                onClick={() => setIsSignUp(false)}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                Sign In
+              </button>
+            </>
+          ) : (
+            <>
+              Don't have an account?{' '}
+              <button
+                onClick={() => setIsSignUp(true)}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
