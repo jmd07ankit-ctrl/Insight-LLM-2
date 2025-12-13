@@ -1,15 +1,17 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
@@ -61,7 +63,6 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authToken,
-        ...corsHeaders
       },
       body: JSON.stringify(webhookPayload)
     });
@@ -80,6 +81,7 @@ serve(async (req) => {
       message: `${type} data sent to webhook successfully`,
       webhookResponse 
     }), {
+      status: 200,
       headers: { 
         'Content-Type': 'application/json',
         ...corsHeaders 
@@ -90,7 +92,7 @@ serve(async (req) => {
     console.error('Process additional sources error:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: String(error),
       success: false 
     }), {
       status: 500,
