@@ -100,10 +100,33 @@ export const useNotebooks = () => {
     mutationFn: async (notebookData: { title: string; description?: string }) => {
       console.log('Creating notebook with data:', notebookData);
       console.log('Current user:', user?.id);
-      
+
       if (!user) {
         console.error('User not authenticated');
         throw new Error('User not authenticated');
+      }
+
+      // Ensure profile exists before creating notebook
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        console.log('Profile does not exist, creating it...');
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          throw new Error('Failed to create user profile');
+        }
       }
 
       const { data, error } = await supabase
@@ -121,7 +144,7 @@ export const useNotebooks = () => {
         console.error('Error creating notebook:', error);
         throw error;
       }
-      
+
       console.log('Notebook created successfully:', data);
       return data;
     },
